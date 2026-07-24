@@ -56,12 +56,12 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     debugImplementation(libs.androidx.compose.ui.tooling)
-
+    //imple libs for room
     implementation(libs.androidx.room.ktx)
     implementation(libs.androidx.room.runtime)
-
+    //imple libs for sqlcipher
     implementation(libs.sqlcipher.android)
     implementation(libs.androidx.sqlite.ktx)
 
-    "ksp"(libs.androidx.room.compiler)
+    ksp(libs.androidx.room.compiler)
 }
