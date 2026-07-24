@@ -41,3 +41,43 @@ Dự án tuân thủ nghiêm ngặt mô hình **Clean Architecture** kết hợp
 * **Asynchronous:** Kotlin Coroutines & Flow
 * **Cloud Backend:** Supabase (PostgreSQL Distributed Server)
 * **Network Client:** OkHttp3
+
+## 🛡️ Kiến Trúc Bảo Mật & Quy Trình Hoạt Động
+
+Kiến trúc bảo mật cốt lõi của **CryptoVault** được chia thành 3 giai đoạn chính: Bảo vệ thời gian chạy (Startup), Xác thực đa lớp (Authentication), và Quản lý dữ liệu an toàn trong bộ nhớ (Vault Usage).
+
+### 1. Giai đoạn Khởi động (Quét mã độc RASP)
+Ngay khi ứng dụng được khởi chạy, các biện pháp phòng vệ sẽ được thực thi lập tức trước khi hiển thị bất kỳ giao diện nào cho người dùng:
+* **Quét bảo mật (RASP):** Ứng dụng thực hiện các kiểm tra tự bảo vệ (Runtime Application Self-Protection) để phát hiện thiết bị đã Root, công cụ bẻ khóa (Hooking frameworks), trình giả lập, hoặc chữ ký ứng dụng bị thay đổi.
+* **Xử lý mối đe dọa:**
+    * Nếu phát hiện nguy hiểm: Hệ thống sẽ ghi nhận thông tin chi tiết về mối đe dọa, gửi báo cáo lỗi về **Supabase**, kích hoạt đồng hồ đếm ngược 10 giây để hiển thị cảnh báo cho người dùng và buộc thoát ứng dụng (`Exit App`).
+    * Nếu môi trường thiết bị an toàn: Ứng dụng sẽ chuyển sang giai đoạn Xác thực.
+
+### 2. Giai đoạn Xác thực (Quy trình Đa lớp & Dự phòng)
+Đảm bảo xác minh danh tính người dùng tuyệt đối thông qua luồng thiết lập ban đầu hoặc đăng nhập:
+* **Thiết lập lần đầu (Người dùng mới):**
+    * Kiểm tra xem đã có mã PIN hoặc Vân tay chưa. Nếu chưa:
+    * Người dùng được yêu cầu **Cài đặt PIN** $\rightarrow$ Cấu hình **Sinh trắc học (Biometrics)** $\rightarrow$ **Khởi tạo Khóa bí mật (Secret Key)** (dành cho 2FA qua Google/Microsoft Authenticator) $\rightarrow$ **Xác nhận OTP** $\rightarrow$ **Vào Vault**.
+* **Luồng đăng nhập (Người dùng cũ):**
+    * Người dùng trải qua lớp xác thực đầu tiên: **Nhập PIN** hoặc quét **Vân tay**.
+    * **Kiểm tra Xác thực Thành công:**
+        * **Nếu thành công:** Ứng dụng yêu cầu xác thực **Mã OTP** $\rightarrow$ Kiểm tra xem **OTP có khớp không**.
+            * Nếu OTP khớp: Hệ thống sẽ **Đặt lại Bộ đếm số lần sai** và cho phép người dùng **Vào Vault**.
+            * Nếu OTP sai: Ứng dụng đưa người dùng quay lại màn hình thiết lập/khởi động.
+        * **Nếu thất bại:** Hệ thống thực hiện cơ chế phòng vệ tăng cường:
+            * **Tăng Bộ đếm số lần sai** $\rightarrow$ Kiểm tra điều kiện `Số lần sai < 5`.
+            * Nếu người dùng nhập sai liên tiếp 5 lần, hệ thống sẽ kích hoạt cơ chế **Tự hủy (Xóa toàn bộ dữ liệu - Wipe Data)** để đưa các kho lưu trữ mã hóa về trạng thái trống trống hoàn toàn.
+
+### 3. Giai đoạn Sử dụng Vault & Vòng đời Dữ liệu
+Định nghĩa cách dữ liệu mã hóa được xử lý trên RAM và cách ứng dụng phản ứng khi bị gián đoạn:
+* **Trạng thái Hoạt động (Active):**
+    * Mở **SQLCipher Database** bằng cách sử dụng Khóa Master Key tạm thời được lưu giữ an toàn trên RAM.
+    * Cho phép người dùng thực hiện các thao tác **CRUD Ghi chú** (Tạo, Đọc, Sửa, Xóa) cơ bản.
+    * Nội dung ghi chú liên tục được **Mã hóa** và lưu trữ an toàn (`Save`) ngược trở lại database.
+* **Trạng thái Bị động (Khi có sự kiện hệ thống - Thoát app/Khóa màn hình):**
+    * Kích hoạt thông qua các sự kiện vòng đời của Android (ví dụ: `onStop`).
+    * **Xóa Khóa Master Key khỏi RAM ngay lập tức:** Ngăn chặn các cuộc tấn công trích xuất bộ nhớ (memory-dump) hoặc tấn công khởi động lạnh (cold-boot).
+    * **Cập nhật trạng thái: Đã khóa (Locked):** Hủy bỏ trạng thái giao diện hiện tại.
+    * **Quay lại màn hình Đăng nhập:** Buộc người dùng phải xác thực lại hoàn toàn từ đầu khi mở lại ứng dụng.
+
+![CryptoVault Process Diagram](docs/images/CryptoVault_Diagram.png)
