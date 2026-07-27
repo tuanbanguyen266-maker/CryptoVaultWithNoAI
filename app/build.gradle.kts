@@ -63,5 +63,11 @@ dependencies {
     implementation(libs.sqlcipher.android)
     implementation(libs.androidx.sqlite.ktx)
 
+    //imple libs for create TOTP
+    implementation("dev.turingcomplete:kotlin-onetimepassword:3.0.0")
+
+    //imple libs for encode/decode base32
+    implementation("commons-codec:commons-codec:1.22.0")
+
     ksp(libs.androidx.room.compiler)
 }
