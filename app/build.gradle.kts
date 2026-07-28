@@ -72,5 +72,7 @@ dependencies {
     //imple libs for create QR code
     implementation("com.google.zxing:core:3.5.4")
 
+    //imple libs for check root
+    implementation("com.scottyab:rootbeer-lib:0.1.2")
     ksp(libs.androidx.room.compiler)
 }
