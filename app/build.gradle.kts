@@ -69,5 +69,8 @@ dependencies {
     //imple libs for encode/decode base32
     implementation("commons-codec:commons-codec:1.22.0")
 
+    //imple libs for create QR code
+    implementation("com.google.zxing:core:3.5.4")
+
     ksp(libs.androidx.room.compiler)
 }
