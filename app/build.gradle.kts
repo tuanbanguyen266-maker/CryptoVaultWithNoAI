@@ -59,6 +59,7 @@ dependencies {
     //imple libs for room
     implementation(libs.androidx.room.ktx)
     implementation(libs.androidx.room.runtime)
+    ksp(libs.androidx.room.compiler)
     //imple libs for sqlcipher
     implementation(libs.sqlcipher.android)
     implementation(libs.androidx.sqlite.ktx)
@@ -74,5 +75,4 @@ dependencies {
 
     //imple libs for check root
     implementation("com.scottyab:rootbeer-lib:0.1.2")
-    ksp(libs.androidx.room.compiler)
 }
