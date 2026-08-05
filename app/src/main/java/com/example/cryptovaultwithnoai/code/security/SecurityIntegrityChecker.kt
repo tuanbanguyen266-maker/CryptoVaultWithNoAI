@@ -9,6 +9,8 @@ import java.io.BufferedReader
 import java.io.File
 import java.io.InputStreamReader
 import java.net.Socket
+import android.content.pm.ApplicationInfo
+import android.os.Debug
 
 //RASP (Runtime Application Self-Protection) for the CryptoVault
 object SecurityIntegrityChecker {
@@ -123,10 +125,54 @@ object SecurityIntegrityChecker {
 
         }
 
-
         return false
     }
+    fun isDebuggerAttached(context: Context): Boolean {
+        // check app is build debugger
+        val isAppDebuggable = (context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
+        // check if connected or waitting
+        val isConnected = Debug.isDebuggerConnected() || Debug.waitingForDebugger()
 
+        return isAppDebuggable && isConnected
+    }
+
+   //check ADB(USB or WF)
+    fun isAdbSettingEnabled(context: Context): Boolean {
+        val resolver = context.contentResolver
+
+        // USB Debugging
+        val adbEnabled = runCatching {
+            Settings.Global.getInt(resolver, Settings.Global.ADB_ENABLED, 0) > 0
+        }.getOrDefault(false)
+
+        // Wireless Debugging (Android 11+)
+        val adbWifiEnabled = runCatching {
+            Settings.Global.getInt(resolver, "adb_wifi_enabled", 0) > 0 ||
+                    Settings.Secure.getInt(resolver, "adb_wifi_enabled", 0) > 0
+        }.getOrDefault(false)
+
+        return adbEnabled || adbWifiEnabled
+    }
+
+    //check developer option
+    fun isDeveloperOptionsEnabled(context: Context): Boolean {
+        return runCatching {
+            Settings.Global.getInt(
+                context.contentResolver,
+                Settings.Global.DEVELOPMENT_SETTINGS_ENABLED,
+                0
+            ) > 0
+        }.getOrDefault(false)
+    }
+
+    //Check the ADB port over the network
+    fun isAdbOverNetwork(): Boolean {
+        return runCatching {
+            val process = Runtime.getRuntime().exec("getprop service.adb.tcp.port")
+            val port = process.inputStream.bufferedReader().use { it.readLine() }
+            !port.isNullOrBlank() && port != "-1"
+        }.getOrDefault(false)
+    }
 
 
 }
